@@ -71,6 +71,18 @@ protected:
         }
     }
 
+    QString getRealIpFromHeader(QTcpSocket *clientSocket)
+    {
+        const QByteArray &requestData = clientSocket->property("requestData").toByteArray();
+        const QString xRealIpHeader = "X-Real-IP";
+
+        for (const QString &line : QTextStream(requestData).readAll().split("\r\n")) {
+            if (line.startsWith(xRealIpHeader + ":"))
+                return line.mid(xRealIpHeader.length() + 1).trimmed();
+        }
+
+        return clientSocket->peerAddress().toString();
+    }
 
     void processRequest(const QString &requestData, QTcpSocket *clientSocket)
     {
@@ -88,7 +100,7 @@ protected:
         QString method = parts[0];
         QString path = parts[1];
 
-        QString clientIp = clientSocket->peerAddress().toString();
+        QString clientIp = getRealIpFromHeader(clientSocket);
 
         QString response;
         QString response_status = "404 Not Found";
